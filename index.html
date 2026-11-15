@@ -482,7 +482,7 @@ tr:last-child td{border-bottom:0}
 </section>
 
 <section class="contenu-admin" id="section-carte">
-<div class="entete-admin"><div><h1>Menu et photos</h1><p>Plats, prix, photos, allergènes et version anglaise.</p></div>
+<div class="entete-admin"><div><h1>Menu et photos</h1><p>Plats, prix, photos, formats et version anglaise.</p></div>
 <div class="outils"><button class="btn btn-leger btn-petit" id="ajouter-cat">Ajouter une catégorie</button><button class="btn btn-principal btn-petit" id="ajouter-item"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M3 9h12M9 3v12"/></svg>Ajouter un item</button></div></div>
 <div id="carte-admin" style="display:flex;flex-direction:column;gap:22px"></div>
 </section>
@@ -544,8 +544,6 @@ tr:last-child td{border-bottom:0}
 <div class="champ"><label for="f-poste">Préparé par</label><select id="f-poste"><option value="cuisine">Cuisine</option><option value="bar">Bar</option></select></div>
 <label class="bascule"><input type="checkbox" id="f-dispo"><i></i>Disponible à la commande</label>
 <label class="bascule"><input type="checkbox" id="f-suggere"><i></i>Proposer en suggestion avant l'envoi</label>
-<h3>Allergènes</h3>
-<div class="coches" id="f-allergenes"></div>
 <h3>Version anglaise (facultatif)</h3>
 <div class="champ"><label for="f-nom-en">Nom en anglais</label><input type="text" id="f-nom-en" maxlength="50" lang="en"></div>
 <div class="champ"><label for="f-desc-en">Description en anglais</label><textarea id="f-desc-en" rows="2" maxlength="120" lang="en"></textarea></div>
@@ -659,7 +657,7 @@ tr:last-child td{border-bottom:0}
   }
   var MENU_DEPART = [
     ex('k1', 'Combos', 'Combo exemple', 'Sample combo', 11, { desc: 'Un plat et un breuvage', descEn: 'One meal and one drink' }),
-    ex('r1', 'Repas', 'Plat exemple 1', 'Sample meal 1', 8, { allergenes: ['ble', 'lait'], formats: [{ nom: 'Petit', nomEn: 'Small', prix: 8 }, { nom: 'Grand', nomEn: 'Large', prix: 11 }], extras: [{ nom: 'Extra exemple', nomEn: 'Sample extra', prix: 1.5 }] }),
+    ex('r1', 'Repas', 'Plat exemple 1', 'Sample meal 1', 8, { formats: [{ nom: 'Petit', nomEn: 'Small', prix: 8 }, { nom: 'Grand', nomEn: 'Large', prix: 11 }], extras: [{ nom: 'Extra exemple', nomEn: 'Sample extra', prix: 1.5 }] }),
     ex('r2', 'Repas', 'Plat exemple 2', 'Sample meal 2', 10),
     ex('r3', 'Repas', 'Plat exemple 3', 'Sample meal 3', 12),
     ex('r4', 'Repas', 'Plat exemple 4', 'Sample meal 4', 9, { dispo: false }),
@@ -928,9 +926,9 @@ tr:last-child td{border-bottom:0}
     } else {
       var items = etat.menu.filter(function (it) { return it.cat === etat.cat; });
       $('liste').innerHTML = (msgFerme() ? '<p class="bandeau pause" role="status">' + msgFerme() + '</p>' : '') + '<h1>' + esc(catNom(etat.cat)) + '</h1>' + items.map(function (it) {
-        var al = allergenesTexte(it, etat.lang), desc = L(it, 'desc');
+        var desc = L(it, 'desc');
         return '<div class="item' + (it.dispo ? '' : ' rupture') + '">' + photoHtml(it, L(it, 'nom')) + '<div class="item-corps"><div class="item-nom">' + esc(L(it, 'nom')) + '</div>' +
-          (desc ? '<div class="item-desc">' + esc(desc) + '</div>' : '') + (al ? '<div class="item-all"><b>' + t('contient') + ' :</b> ' + esc(al) + '</div>' : '') +
+          (desc ? '<div class="item-desc">' + esc(desc) + '</div>' : '') +
           '<div class="item-bas"><span class="item-prix">' + prixAffiche(it) + '</span>' + controle(it) + '</div></div></div>';
       }).join('') + '<p class="note-allergie">' + t('allergie') + '</p>';
     }
@@ -1280,7 +1278,6 @@ tr:last-child td{border-bottom:0}
     rendreOptsEdition('formats'); rendreOptsEdition('extras'); $('err-options').hidden = true;
     $('titre-edition').textContent = it ? 'Modifier l\'item' : 'Ajouter un item';
     $('f-cat').innerHTML = cats.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.nom) + '</option>'; }).join('');
-    $('f-allergenes').innerHTML = ALLERGENES.map(function (a) { return '<label class="coche-l"><input type="checkbox" value="' + a[0] + '"' + (it && it.allergenes.indexOf(a[0]) !== -1 ? ' checked' : '') + '>' + a[1] + '</label>'; }).join('');
     $('f-nom').value = it ? it.nom : '';
     $('f-desc').value = it ? it.desc : '';
     $('f-nom-en').value = it ? it.nomEn : '';
@@ -1358,9 +1355,8 @@ tr:last-child td{border-bottom:0}
     if (!ok) { (nom ? $('f-prix') : $('f-nom')).focus(); return; }
     if (!optsOk) { $('err-options').scrollIntoView({ block: 'center' }); return; }
     var al = [];
-    $('f-allergenes').querySelectorAll('input:checked').forEach(function (c) { al.push(c.value); });
     var d = { nom: nom, desc: $('f-desc').value.trim(), nomEn: $('f-nom-en').value.trim(), descEn: $('f-desc-en').value.trim(), cat: $('f-cat').value, poste: $('f-poste').value,
-      prix: Math.round(prix * 100) / 100, photo: brouillon.photo, dispo: $('f-dispo').checked, suggere: $('f-suggere').checked, allergenes: al, formats: formats, extras: extras };
+      prix: Math.round(prix * 100) / 100, photo: brouillon.photo, dispo: $('f-dispo').checked, suggere: $('f-suggere').checked, allergenes: [], formats: formats, extras: extras };
     var it = brouillon.id ? item(brouillon.id) : null;
     if (it) { for (var k in d) it[k] = d[k]; purgerItem(it.id); }
     else { d.id = 'i' + Date.now(); etat.menu.push(d); }
